@@ -20,6 +20,7 @@
 #include "rgb_hsv.h"
 #include "print.h"
 #include "particle.h"
+#include "fps.h"
 
 // Display list for coordinate axis 
 GLuint axisList;
@@ -31,12 +32,7 @@ int axisEnabled= 1;
 
 ///////////////////////////////////////////////
 
-
-
-///////////////////////////////////////////////
-
 LinkedListParticleSystem* particle_system;
-
 
 typedef struct Camera{
   GLfloat eyeX, eyeY, eyeZ;
@@ -44,48 +40,48 @@ typedef struct Camera{
 
 Camera* camera;
 
-hsv* current_hsv;
-rgb* current_rgb;
-
 int current_view = 0;
 Particle* current_view_p;
 
-/* START KILLING PARTICLES WHEN WE GET THE SAME COLOR BACK AGAIN ? */
-
-void animate(){ 
-
-  particle_system->t++;
-
-  if(particle_system->t % 5 == 0){
-    current_hsv->h++;
-    if(current_hsv->h > 360){
-      current_hsv->h = 0; //modulus???
-    }
-
-    *current_rgb = hsv2rgb(*current_hsv);
-  }
-
+void create_particles(){
   if(particle_system->particle_spawn_frequency < 1){
   	if(particle_system->t % (int)(1/particle_system->particle_spawn_frequency) == 0){
-  		Particle* new_particle = init_particle();
-  		add_particle(particle_system, new_particle);
-  		new_particle->r = current_rgb->r;
-  		new_particle->g = current_rgb->g;
-  		new_particle->b = current_rgb->b;
+  		create_new_particle(particle_system);
   	}
   }
   else{
   	int i;
   	for(i = 0; i < particle_system->particle_spawn_frequency; i++){
-  		Particle* new_particle = init_particle();
-  		add_particle(particle_system, new_particle);
-  		new_particle->r = current_rgb->r;
-  		new_particle->g = current_rgb->g;
-  		new_particle->b = current_rgb->b;
+  		create_new_particle(particle_system);
   	}
   }
+}
+
+void update_particle_system(){
+  particle_system->t++;
+  
+  particle_system->current_hsv->h += particle_system->hsv_increment_amount;
+  if(particle_system->current_hsv->h > 360){particle_system->current_hsv->h = 0;}
+}
+
+void display_info(){
+  print_n("FPS", 					(int)fps, 0.005, 0.97);
+  print_n("Time", 					particle_system->t, 0.005, 0.94);
+  print_n("Number of particles", 	particle_system->n, 0.005, 0.91);
+  print_n("Spawn frequency", 		particle_system->particle_spawn_frequency, 0.005, 0.88);
+}
+
+void animate(){ 
+
+  count_fps();
+
+  update_particle_system();
+  create_particles();
+
 
   glLoadIdentity();
+
+
 
      if(current_view == 1){
 
@@ -103,32 +99,21 @@ void animate(){
   glClear(GL_COLOR_BUFFER_BIT);
   // If enabled, draw coordinate axis
   
-
-
-
-/* glColor3f(1.0,0.0,0.0);
-  glBegin(GL_LINE_LOOP);
-    glVertex3f(-3,-3,0);
-    glVertex3f(0,3,0);
-    glVertex3f(3,-3,0);
-  glEnd();
-  glFlush();*/
-
   //  glClearColor( 1.0f, 1.0f, 1.0f, 1.0f );
     glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
-    //glBegin( GL_POINTS );
-    
+
+    if(particle_system->renderOption == POINT){
+    	glBegin(GL_POINTS);
+    }
+
  //glBegin(GL_LINE_STRIP);
  
+
 
 	Particle* p = particle_system->tail;
 
 	while(p){
-		//if(p->time_lived == particle_system->particle_lifespan){
-		//	destroyLast();
-		//}
-		//else{ // because we start at the end... TODO NEED THIS???
 
 		  if(p->time_lived > particle_system->particle_lifespan){
 		  	particle_system->tail = p->prev;
@@ -165,8 +150,6 @@ void animate(){
 
 	      p->orbital_radius *= a;
 
-
-
 	      p->x = 0.8* (cos(p->orbit * DEG_TO_RAD) * p->orbital_radius);
 	      p->z = 0.8* (sin(p->orbit * DEG_TO_RAD) * p->orbital_radius);
 
@@ -174,63 +157,31 @@ void animate(){
 
 	    glPushMatrix();
 	      glColor3f(p->r, p->g, p->b);
-	      glTranslated(p->x, p->y, p->z);
-	      glutSolidSphere(0.1, 10, 10);
-	      //glutSolidTeapot(5);
-	      //glVertex3f(p->x, p->y, p->z);
+
+	      if(particle_system->renderOption == POINT){
+	      	glVertex3f(p->x, p->y, p->z);
+	      }
+	      else{
+	      	glTranslated(p->x, p->y, p->z);
+
+	      	if(particle_system->renderOption == SPHERE){
+	      		glutSolidSphere(0.1, 10, 10);
+	      	}
+	      	else if(particle_system->renderOption == TEAPOT){
+	      		glutSolidTeapot(0.1);
+	      	}
+	      }
+
 	    glPopMatrix();
-
-	      
-	      //glVertex3f(p->x, p->y, p->z);
-
 
 			p = p->prev;
 		}
 
-		
-
-	      
-	      //glVertex3f(p->x, p->y, p->z);    
-
-//glEnd();
+		glEnd();
 
 
 
-
-/*    int i;
-    for ( i = 0; i < 20; ++i )
-    {
-        glVertex2f( i+10, i+10 );
-    }*/
-	print_n("Time", particle_system->t, 0.005, 0.97);
-	print_n("Number of particles", particle_system->n, 0.005, 0.94);
-	print_n("Spawn frequency", particle_system->particle_spawn_frequency, 0.005, 0.91);
-
-
-    if(axisEnabled) glCallList(axisList);
-
-  glutSwapBuffers();
-}
-
-
-void display()
-{
-  glLoadIdentity();
-  gluLookAt(camera->eyeX, camera->eyeY, camera->eyeZ,
-            10.0, 0.0, 0.0,
-            0.0, 1.0, 0.0);
-  // Clear the screen
-  glClear(GL_COLOR_BUFFER_BIT);
-  // If enabled, draw coordinate axis
-
-  //  glClearColor( 1.0f, 1.0f, 1.0f, 1.0f );
-    glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
-
-    glBegin( GL_POINTS );
-    glColor4f( 0.95f, 0.207, 0.031f, 1.0f );
-
-    glEnd();
-
+	display_info();
     if(axisEnabled) glCallList(axisList);
 
   glutSwapBuffers();
@@ -238,7 +189,16 @@ void display()
 
 ///////////////////////////////////////////////
 
-
+void special_keypress(int key, int x, int y) {
+ switch (key) {
+	 case GLUT_KEY_UP:
+	  particle_system->initial_vy *= 1.2;
+	  break;
+	 case GLUT_KEY_DOWN:
+	  particle_system->initial_vy /= 1.2;
+	  break;
+ }
+}
 
 void keyboard(unsigned char key, int x, int y)
 {
@@ -248,9 +208,14 @@ void keyboard(unsigned char key, int x, int y)
   	case '-':	particle_system->particle_spawn_frequency /= 1.2; printf("-\n");
   				break;
   	case 'v':	current_view_p = particle_system->head;
-  				current_view = 1;
+  				current_view = !current_view;
   				break;
-  	case ' ': 	reset(particle_system); // TODO MAY SEG FAULT
+  	case 'c':	particle_system->hsv_increment_amount *= 1.2;
+  				break;
+  	case ' ': 	reset(particle_system);
+  				break;
+  	case 'r': 	particle_system->renderOption++;
+  				particle_system->renderOption %= 3;
   				break;
   	case 27:	exit(0); //esc
   				break;
@@ -272,7 +237,7 @@ void reshape(int width, int height)
 ///////////////////////////////////////////////
 
 void makeAxes() {
-// Create a display list for drawing coord axis
+  // Create a display list for drawing coord axis
   axisList = glGenLists(1);
   glNewList(axisList, GL_COMPILE);
       glLineWidth(2.0);
@@ -298,9 +263,10 @@ void initGraphics(int argc, char *argv[])
   glutInitWindowPosition(100, 100);
   glutInitDisplayMode(GLUT_DOUBLE);
   glutCreateWindow("Particle System");
-  glutDisplayFunc(display);
+  //glutDisplayFunc(display);
   glutIdleFunc(animate);
   glutKeyboardFunc(keyboard);
+  glutSpecialFunc(special_keypress);
   //glutMouseFunc(mouse);
   //glutPassiveMotionFunc (mouse_motion);
   glutReshapeFunc(reshape);
@@ -326,14 +292,6 @@ int main(int argc, char *argv[])
   camera->eyeZ = 10.0;
 
   particle_system = init_particle_system();
-
-  current_hsv = (hsv*) malloc(sizeof(hsv));
-  current_hsv->h = 0;
-  current_hsv->s = 1;
-  current_hsv->v = 1;
-
-  current_rgb = (rgb*) malloc(sizeof(rgb));
-  *current_rgb = hsv2rgb(*current_hsv);
 
   //double f;
   srand(time(NULL));
