@@ -22,6 +22,7 @@
 #include "particle.h"
 #include "camera.h"
 #include "fps.h"
+#include "textures.h"
 
 // Display list for coordinate axis 
 GLuint axisList;
@@ -42,10 +43,9 @@ int axisEnabled= 1;
 ///////////////////////////////////////////////
 
 LinkedListParticleSystem* particle_system;
-
 Camera* camera;
-
-Particle* current_view_p;
+GLuint basketball_texture;
+int disco_floor = 0;
 
 void display_info(){
   print_n("FPS", 					(int)fps, 0.005, 0.97);
@@ -54,9 +54,9 @@ void display_info(){
   print_n("Spawn frequency", 		particle_system->particle_spawn_frequency, 0.005, 0.88);
 }
 
-void drawFloor(float w){
+void drawFloor(float w, double r, double g, double b){
 	glPushMatrix();
-		glColor3f(0.5, 0.5, 0.5);   
+		glColor3f(r, g, b);   
 		glBegin(GL_QUADS);                      	// Draw A Quad
 		    glVertex3f(-w, 0.0f, w);                // Top Left
 		    glVertex3f( w, 0.0f, w);                // Top Right
@@ -94,7 +94,14 @@ void animate(){
 	// Clear the screen
 	glClear(GL_COLOR_BUFFER_BIT);
 
-  	drawFloor(20.0f);
+	if(disco_floor){
+		rgb curr_rgb = hsv2rgb(*particle_system->current_hsv);
+		drawFloor(20.0f, curr_rgb.r, curr_rgb.g, curr_rgb.b);
+	}
+	else{
+		drawFloor(20.0f, 0.5, 0.5, 0.5);
+	}
+  	
   	drawSpawnCircle(particle_system);
 
   	if(particle_system->renderOption == POINTS){
@@ -156,8 +163,7 @@ void animate(){
 	      p->z = sin(p->orbit * DEG_TO_RAD) * p->orbital_radius;      
 
 		    //render
-		    
-	      	glVertex3f(p->x, p->y, p->z);
+		    glVertex3f(p->x, p->y, p->z);
 
 	      	if(particle_system->renderOption == LINES || particle_system->renderOption == FIRE){
 	      		glEnd();
@@ -231,6 +237,9 @@ void keyboard(unsigned char key, int x, int y)
   				break;
   	case ' ': 	reset(particle_system);
   				reset_camera(camera);
+  				disco_floor = 0;
+  				break;
+  	case 'f':	disco_floor = !disco_floor;
   				break;
   	case 'r':	particle_system->renderOption = (particle_system->renderOption+1) % 3;
   				break;
@@ -274,7 +283,7 @@ void initGraphics(int argc, char *argv[])
   glutInitWindowSize(800, 600);
   glutInitWindowPosition(100, 100);
   glutInitDisplayMode(GLUT_DOUBLE);
-  glutCreateWindow("Particle System");
+  glutCreateWindow("Particle DISCO");
   //glutDisplayFunc(display);
   glutIdleFunc(animate);
   glutKeyboardFunc(keyboard);
@@ -294,6 +303,8 @@ int main(int argc, char *argv[])
 {
   camera = init_camera();
   particle_system = init_particle_system();
+
+  basketball_texture = LoadTexture( "basketball.bmp" );
 
   srand(time(NULL));
   initGraphics(argc, argv);

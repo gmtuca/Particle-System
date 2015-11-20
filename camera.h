@@ -1,6 +1,5 @@
-#define EYE_X_INIT 3.0f
 #define EYE_Y_INIT 8.5f
-#define EYE_Z_INIT 10.0f
+#define EYE_ORBIT_INIT 75
 
 #define CAMERA_DISTANCE_FROM_CENTER 10.0f
 
@@ -13,22 +12,21 @@ typedef struct Camera{
   double orbit;
 } Camera;
 
+void update_camera(Camera* camera){
+	camera->eyeX = cos(camera->orbit * DEG_TO_RAD) * CAMERA_DISTANCE_FROM_CENTER; 
+	camera->eyeZ = sin(camera->orbit * DEG_TO_RAD) * CAMERA_DISTANCE_FROM_CENTER; 
+}
+
 void reset_camera(Camera* camera){
-  camera->eyeX 	= EYE_X_INIT;
   camera->eyeY 	= EYE_Y_INIT;
-  camera->eyeZ 	= EYE_Z_INIT;
-  camera->orbit = 0;
+  camera->orbit = EYE_ORBIT_INIT;
+  update_camera(camera);
 }
 
 Camera* init_camera(){
 	Camera* camera = (Camera*) malloc(sizeof(Camera));
   	reset_camera(camera);
   	return camera;
-}
-
-void update_camera(Camera* camera){
-	camera->eyeX = cos(camera->orbit * DEG_TO_RAD) * CAMERA_DISTANCE_FROM_CENTER; 
-	camera->eyeZ = sin(camera->orbit * DEG_TO_RAD) * CAMERA_DISTANCE_FROM_CENTER; 
 }
 
 void view(Camera* camera){
