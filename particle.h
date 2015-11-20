@@ -1,9 +1,11 @@
 #define DEFAULT_PARTICLE_LIFESPAN         		1700
-#define DEFAULT_PARTICLE_SPAWN_FREQUENCY  		0.2
+#define DEFAULT_PARTICLE_SPAWN_FREQUENCY  		0.1
 #define DEFAULT_PARTICLE_ORBIT_TIME       		200
 #define DEFAULT_PARTICLE_ORBIT_RADIUS     		0.2
 #define DEFAULT_PARTICLE_HSV_INCREMENT_AMOUNT 	0.25
-#define DEFAULT_PARTICLE_INITIAL_VY				1
+#define DEFAULT_PARTICLE_INITIAL_VY				0.25
+
+#define PI 3.1415
 
 double myRandom(){ //Return random double within range [0,1]
   return (rand()/(double)RAND_MAX);
@@ -13,10 +15,9 @@ typedef struct Particle Particle;
 
 struct Particle {
   GLfloat  x,  y,  z;
-  GLfloat vx, vy, vz;
+  GLfloat  vy;
+  GLfloat orbit, orbital_radius;
   GLfloat t;
-  GLfloat orbit, orbital_radius, total_orbit_time, orbital_radius_resistance;
-  GLfloat time_lived;
   GLfloat r, g, b;
 
   Particle* next;
@@ -24,9 +25,9 @@ struct Particle {
 };
 
 typedef enum {
-	POINT = 0,
-	SPHERE,
-	TEAPOT
+	POINTS = 0,
+	LINES,
+	FIRE
 } RenderOption;
 
 typedef struct LinkedListParticleSystem{
@@ -36,9 +37,12 @@ typedef struct LinkedListParticleSystem{
 	hsv* current_hsv;
 	double hsv_increment_amount;
 	GLfloat initial_vy;
+	GLfloat initial_orbit_radius;
+	GLfloat particle_orbit_time;
 
 	int particle_lifespan;
 	RenderOption renderOption;
+
 
 	Particle* head;
   	Particle* tail;
@@ -59,8 +63,25 @@ void reset_attributes(LinkedListParticleSystem* ps){
   ps->current_hsv->v = 1;
 
   ps->initial_vy = DEFAULT_PARTICLE_INITIAL_VY;
+  ps->initial_orbit_radius = DEFAULT_PARTICLE_ORBIT_RADIUS;
+  ps->particle_orbit_time = DEFAULT_PARTICLE_ORBIT_TIME;
 
-  ps->renderOption = POINT;
+  ps->renderOption = POINTS;
+}
+
+void drawSpawnCircle(LinkedListParticleSystem* ps){
+	glColor3f(1, 0, 0.5); 
+	
+	GLfloat radius = ps->initial_orbit_radius;
+
+	int n_lines = 100;
+	
+	glBegin(GL_LINE_LOOP);
+		int i;
+		for(i = 0; i <= n_lines;i++) { 
+			glVertex3f(radius * cos(i *  2.0f * PI / n_lines), 0, radius* sin(i * 2.0f * PI / n_lines));
+		}
+	glEnd();
 }
 
 LinkedListParticleSystem* init_particle_system(){
@@ -85,23 +106,25 @@ void reset(LinkedListParticleSystem* ps){
   reset_attributes(ps);
 }
 
+void update_particle_system(LinkedListParticleSystem* ps){
+  //Update particle System
+  ps->t++;
+  
+  ps->current_hsv->h += ps->hsv_increment_amount;
+  if(ps->current_hsv->h > 360){ps->current_hsv->h = 0;}
+}
+
+///////////////////////////////////////////////////////////////
 Particle* init_particle(){
   Particle* p = (Particle*) malloc(sizeof(Particle));
     p->x = 0;
     p->y = 0;
     p->z = 0;
     p->t = 0;
-    p->time_lived = 0;
-    p->vy = 1;
     p->orbit = myRandom() * 360;
-    p->total_orbit_time   = DEFAULT_PARTICLE_ORBIT_TIME;
-    p->orbital_radius     = DEFAULT_PARTICLE_ORBIT_RADIUS;
 
     p->prev = NULL;
     p->next = NULL;
-
-    //TODO can probably get rid of most of these
-    p->orbital_radius_resistance = 0;
 
     return p;
 }
@@ -128,8 +151,23 @@ void add_particle(LinkedListParticleSystem* ps, Particle* p){
     p->g = p_rgb.g;
     p->b = p_rgb.b;
     p->vy = ps->initial_vy;
+    p->orbital_radius = ps->initial_orbit_radius;
 }
 
 void create_new_particle(LinkedListParticleSystem* ps){
 	add_particle(ps, init_particle());
+}
+
+void create_particles(LinkedListParticleSystem* ps){
+  if(ps->particle_spawn_frequency < 1){
+  	if(ps->t % (int)(1/ps->particle_spawn_frequency) == 0){
+  		create_new_particle(ps);
+  	}
+  }
+  else{
+  	int i;
+  	for(i = 0; i < ps->particle_spawn_frequency; i++){
+  		create_new_particle(ps);
+  	}
+  }
 }

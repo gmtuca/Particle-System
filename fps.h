@@ -1,5 +1,5 @@
 /*
-    Code to calculate fps on each frame.
+    Code to calculate fps.
     Taken from
     https://github.com/alibad/Blog/blob/master/OpenGL/Frame%20Rate/Frame%20Rate/FPS.cpp
     I aknowledge this has not been writen by me.
