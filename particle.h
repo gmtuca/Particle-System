@@ -33,6 +33,9 @@ typedef enum {
 typedef struct LinkedListParticleSystem{
 	int n;
 	int t;
+
+	GLfloat x, z;
+
 	double particle_spawn_frequency;
 	hsv* current_hsv;
 	double hsv_increment_amount;
@@ -48,9 +51,11 @@ typedef struct LinkedListParticleSystem{
   	Particle* tail;
 } LinkedListParticleSystem;
 
-void reset_attributes(LinkedListParticleSystem* ps){
+void reset_attributes(LinkedListParticleSystem* ps, GLfloat x, GLfloat z){
   ps->n = 0;
   ps->t = 0;
+  ps->x = x;
+  ps->z = z;
   ps->head = NULL;
   ps->tail = NULL;
   ps->particle_lifespan         = DEFAULT_PARTICLE_LIFESPAN;
@@ -79,22 +84,21 @@ void drawSpawnCircle(LinkedListParticleSystem* ps){
 	glBegin(GL_LINE_LOOP);
 		int i;
 		for(i = 0; i <= n_lines;i++) { 
-			glVertex3f(radius * cos(i *  2.0f * PI / n_lines), 0, radius* sin(i * 2.0f * PI / n_lines));
+			glVertex3f(ps->x + radius * cos(i *  2.0f * PI / n_lines), 0, ps->z + radius* sin(i * 2.0f * PI / n_lines));
 		}
 	glEnd();
 }
 
-LinkedListParticleSystem* init_particle_system(){
+LinkedListParticleSystem* init_particle_system(GLfloat x, GLfloat z){
 
   LinkedListParticleSystem* ps 	= (LinkedListParticleSystem*) malloc(sizeof(LinkedListParticleSystem));
   ps->current_hsv				= (hsv*) malloc(sizeof(hsv));
-  reset_attributes(ps);
+  reset_attributes(ps, x, z);
 
   return ps;
 }
 
-void reset(LinkedListParticleSystem* ps){
-
+void killall(LinkedListParticleSystem* ps){
   Particle* p = ps->tail;
 
   while(p){
@@ -103,7 +107,12 @@ void reset(LinkedListParticleSystem* ps){
 	p = ps->tail;
   }
 
-  reset_attributes(ps);
+  ps->n = 0;
+}
+
+void reset(LinkedListParticleSystem* ps, GLfloat x, GLfloat z){
+  killall(ps);
+  reset_attributes(ps, ps->x, ps->z);
 }
 
 void update_particle_system(LinkedListParticleSystem* ps){
