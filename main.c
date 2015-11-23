@@ -42,14 +42,13 @@ int axisEnabled= 1;
 
 #define MAX_NUMBER_OF_PARTICLE_SYSTEMS 5
 
-#define FLOOR_SIZE 20.0f
+#define FLOOR_SIZE 30.0f
 
 ///////////////////////////////////////////////
 
 LinkedListParticleSystem** particle_systems;
 
 int selected_index = 0;
-LinkedListParticleSystem* selected_particle_system;
 
 Camera* camera;
 int disco_floor = 0;
@@ -59,8 +58,10 @@ void display_info(){
   float f = 0;
   int i;
   for(i = 0; i < MAX_NUMBER_OF_PARTICLE_SYSTEMS; i++){
-  	n += particle_systems[i]->n;
-  	f += particle_systems[i]->particle_spawn_frequency;
+  	if(particle_systems[i]){
+  		n += particle_systems[i]->n;
+  		f += particle_systems[i]->particle_spawn_frequency;
+  	}
   }
 
   print_n("FPS", 					(int)fps, 0.005, 0.97);  
@@ -90,8 +91,8 @@ void animate(){
 	// Clear the screen
 	glClear(GL_COLOR_BUFFER_BIT);
 
-	if(disco_floor){
-		rgb curr_rgb = hsv2rgb(*selected_particle_system->current_hsv);
+	if(disco_floor && particle_systems[selected_index]){
+		rgb curr_rgb = hsv2rgb(*particle_systems[selected_index]->current_hsv);
 		drawFloor(curr_rgb.r, curr_rgb.g, curr_rgb.b);
 	}
 	else{
@@ -148,7 +149,7 @@ void animate(){
 			  }
 			  else if(particle_system->renderOption == FIRE){
 			  	glBegin(GL_LINES);
-			  	glVertex3f(0,0, 0);
+			  	glVertex3f(particle_system->x,0, particle_system->z);
 			  }
 
 		      //p->y += p->vy * p->t + 0.5 * p->t * p->t;
@@ -196,17 +197,17 @@ void animate(){
 ///////////////////////////////////////////////
 
 void special_keypress(int key, int x, int y) {
-	Particle* p = selected_particle_system->tail;
+	Particle* p = particle_systems[selected_index]->tail;
 
 	switch (key) {
 		case GLUT_KEY_UP:
-	  		selected_particle_system->initial_vy *= ARROWS_VY_CHANGE_FACTOR;
+	  		particle_systems[selected_index]->initial_vy *= ARROWS_VY_CHANGE_FACTOR;
 	  		break;
 	 	case GLUT_KEY_DOWN:
-	  		selected_particle_system->initial_vy /= ARROWS_VY_CHANGE_FACTOR;
+	  		particle_systems[selected_index]->initial_vy /= ARROWS_VY_CHANGE_FACTOR;
 	  		break;
 	 	case GLUT_KEY_RIGHT:
-	 		selected_particle_system->initial_orbit_radius *= ARROWS_ORBIT_RADIUS_CHANGE_FACTOR;
+	 		particle_systems[selected_index]->initial_orbit_radius *= ARROWS_ORBIT_RADIUS_CHANGE_FACTOR;
 
 			while(p){
 				p->orbital_radius *= ARROWS_ORBIT_RADIUS_CHANGE_FACTOR;
@@ -214,7 +215,7 @@ void special_keypress(int key, int x, int y) {
 			}
 	 		break;
 	 	case GLUT_KEY_LEFT:
-	 		selected_particle_system->initial_orbit_radius /= ARROWS_ORBIT_RADIUS_CHANGE_FACTOR;
+	 		particle_systems[selected_index]->initial_orbit_radius /= ARROWS_ORBIT_RADIUS_CHANGE_FACTOR;
 
 	 		while(p){
 				p->orbital_radius /= ARROWS_ORBIT_RADIUS_CHANGE_FACTOR;
@@ -227,7 +228,7 @@ void special_keypress(int key, int x, int y) {
 
 //returns [x,y]
 int* init_location(int ps_index){
-	int xy[2];
+	int* xy = (int*)malloc(sizeof(int)*2);
 
 	switch(ps_index){
 		case 0: xy[0]=0;
@@ -253,21 +254,26 @@ int* init_location(int ps_index){
 
 void keyboard(unsigned char key, int x, int y)
 {
+
+  if(key >= '0' && key <= '9'){
+  	int num_clicked = key - '0';
+
+  	if(num_clicked > MAX_NUMBER_OF_PARTICLE_SYSTEMS){
+  		return;
+  	}
+
+  	selected_index = num_clicked-1;
+
+	if(!particle_systems[selected_index]){
+	  int* xy = init_location(selected_index);
+	  particle_systems[selected_index] = init_particle_system(xy[0], xy[1]);
+	}
+
+	lookat(camera, particle_systems[selected_index]);
+	return;
+  }
+
   switch(key){
-  	case '1':	selected_index = 0;
-  				break;
-   	case '2':	selected_index = 1;
-  				break;
-  	case '3':	selected_index = 2;
-  				break; 
-  	case '4':	selected_index = 3;
-  				break; 			
-   	case '5':	selected_index = 4;
-  				break; 		
-  	case '+':	selected_particle_system->particle_spawn_frequency *= 1.2;
-  				return;
-  	case '-':	selected_particle_system->particle_spawn_frequency /= 1.2;
-  				return;
   	case 'w':	camera->eyeY += 1;
   				return;
   	case 's':	camera->eyeY -= 1;
@@ -278,34 +284,45 @@ void keyboard(unsigned char key, int x, int y)
   	case 'a':	camera->orbit += 5;
   	  			update_camera(camera);
   				return;
-  	case 'c':	selected_particle_system->hsv_increment_amount *= 1.2;
-  				return;
-  	case ' ': 	if(selected_particle_system){
-  					reset(selected_particle_system, selected_particle_system->x, selected_particle_system->z);
-  				}
-  				else{
-  					int* xy = init_location(selected_index);
-  					particle_systems[selected_index] = init_particle_system(xy[0], xy[1]);
-  					selected_particle_system = particle_systems[selected_index];
-  				}
-  				//reset_camera(camera);
-  				disco_floor = 0;
-  				return;
   	case 'f':	disco_floor = !disco_floor;
-  				return;
-  	case 'r':	selected_particle_system->renderOption = (selected_particle_system->renderOption+1) % 3;
   				return;
   	case 27:	exit(0); //esc
   				return;
-  	case 127:	killall(selected_particle_system);//del
-  				free(selected_particle_system);
-  				return;
-  	default:	return;
+  	default:	break;
   }
 
+  if(key == ' '){
+  	disco_floor = 0;
+  	if(particle_systems[selected_index]){
+      reset(particle_systems[selected_index], particle_systems[selected_index]->x, particle_systems[selected_index]->z);
+  	}
+  	else{
+	  int* xy = init_location(selected_index);
+	  particle_systems[selected_index] = init_particle_system(xy[0], xy[1]);
+  	}
+  	return;
+  }
 
-  selected_particle_system = particle_systems[selected_index];
-  lookat(camera, selected_particle_system);
+  switch(key){
+  	case '+':	particle_systems[selected_index]->particle_spawn_frequency *= 1.2;
+  				break;
+  	case '-':	particle_systems[selected_index]->particle_spawn_frequency /= 1.2;
+  				break;
+  	case 'c':	particle_systems[selected_index]->hsv_increment_amount *= 1.2;
+  				break;
+  	case 'f':	disco_floor = !disco_floor;
+  				break;
+  	case 'r':	particle_systems[selected_index]->renderOption = (particle_systems[selected_index]->renderOption+1) % 3;
+  				break;
+  	case 27:	exit(0); //esc
+  				break;
+  	case 127:	killall(particle_systems[selected_index]);//del
+  				free(particle_systems[selected_index]);
+  				particle_systems[selected_index] = NULL;
+  				break;
+  	default:	break;
+  }
+
 }
 
 void reshape(int width, int height)
@@ -367,12 +384,11 @@ int main(int argc, char *argv[])
   particle_systems = (LinkedListParticleSystem**) malloc(sizeof(LinkedListParticleSystem*) * MAX_NUMBER_OF_PARTICLE_SYSTEMS);
 
   int i;
-  for(i = 0; i < MAX_NUMBER_OF_PARTICLE_SYSTEMS; i++){
-  	int* xy = init_location(i);
-  	particle_systems[i] = init_particle_system(xy[0],xy[1]);
-  }
-
-  selected_particle_system = particle_systems[0];
+  //for(i = 0; i < MAX_NUMBER_OF_PARTICLE_SYSTEMS; i++){
+  selected_index = 0;
+  int* xy = init_location(selected_index);
+  particle_systems[selected_index] = init_particle_system(xy[0],xy[1]);
+  //}
 
   //basketball_texture = LoadTexture( "basketball.bmp" );
 
