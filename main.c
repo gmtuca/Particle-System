@@ -24,21 +24,6 @@
 #include "fps.h"
 #include "ex11-bitmap.c"
 
-BITMAPINFO *TobyTexInfo; // Texture bitmap information
-GLubyte    *TobyTexBits; // Texture bitmap pixel bits
-int TobytexName;
-
-BITMAPINFO *SteveTexInfo; // Texture bitmap information
-GLubyte    *SteveTexBits; // Texture bitmap pixel bits
-int StevetexName;
-
-
-// Display list for coordinate axis 
-GLuint axisList;
-
-int AXIS_SIZE= 200;
-int axisEnabled= 1;
-
 #define DEG_TO_RAD 0.017453293
 
 #define GRAVITY 0.005
@@ -53,7 +38,20 @@ int axisEnabled= 1;
 
 #define FLOOR_SIZE 30.0f
 
-///////////////////////////////////////////////
+//////////////////////// GLOBALS //////////////////////////
+
+BITMAPINFO *TobyTexInfo; // Texture bitmap information
+GLubyte    *TobyTexBits; // Texture bitmap pixel bits
+int TobytexName;
+
+BITMAPINFO *SteveTexInfo; // Texture bitmap information
+GLubyte    *SteveTexBits; // Texture bitmap pixel bits
+int StevetexName;
+
+GLuint axisList;
+
+int AXIS_SIZE= 200;
+int axisEnabled= 1;
 
 LinkedListParticleSystem** particle_systems;
 
@@ -61,6 +59,8 @@ int selected_index = 0;
 
 Camera* camera;
 int disco_floor = 0;
+
+///////////////////////////////////////////////////////////
 
 void display_info(){
   int n = 0;
@@ -194,7 +194,6 @@ void animate(){
 			   glTexCoord2f(1.0, 0.0); glVertex3f(p->x-1, p->y-1, p->z);
 			   glTexCoord2f(0.0, 1.0); glVertex3f(p->x+1, p->y+1, p->z);
 			   glTexCoord2f(0.0, 0.0); glVertex3f(p->x+1, p->y-1, p->z);
-	
 		    }
 		    else{
 		    	//render
@@ -221,8 +220,6 @@ void animate(){
 
   glutSwapBuffers();
 }
-
-
 
 ///////////////////////////////////////////////
 
@@ -344,8 +341,6 @@ void keyboard(unsigned char key, int x, int y)
   				break;
   	case 'r':	particle_systems[selected_index]->renderOption = (particle_systems[selected_index]->renderOption+1) % 5;
   				break;
-  	case 27:	exit(0); //esc
-  				break;
   	case 127:	killall(particle_systems[selected_index]);//del
   				free(particle_systems[selected_index]);
   				particle_systems[selected_index] = NULL;
@@ -391,12 +386,9 @@ void initGraphics(int argc, char *argv[])
   glutInitWindowPosition(100, 100);
   glutInitDisplayMode(GLUT_DOUBLE);
   glutCreateWindow("Particle DISCO");
-  //glutDisplayFunc(display);
   glutIdleFunc(animate);
   glutKeyboardFunc(keyboard);
   glutSpecialFunc(special_keypress);
-  //glutMouseFunc(mouse);
-  //glutPassiveMotionFunc (mouse_motion);
   glutReshapeFunc(reshape);
 
   glPointSize(POINT_SIZE);
@@ -405,28 +397,7 @@ void initGraphics(int argc, char *argv[])
   makeAxes();
 }
 
-/////////////////////////////////////////////////
-
-int main(int argc, char *argv[])
-{
-  camera = init_camera();
-
-  particle_systems = (LinkedListParticleSystem**) malloc(sizeof(LinkedListParticleSystem*) * MAX_NUMBER_OF_PARTICLE_SYSTEMS);
-
-  int i;
-  //for(i = 0; i < MAX_NUMBER_OF_PARTICLE_SYSTEMS; i++){
-  selected_index = 0;
-  int* xy = init_location(selected_index);
-  particle_systems[selected_index] = init_particle_system(xy[0],xy[1]);
-  //}
-
-  //basketball_texture = LoadTexture( "basketball.bmp" );
-
-  srand(time(NULL));
-  initGraphics(argc, argv);
-  glEnable(GL_POINT_SMOOTH);
-
-  //bitmap
+void init_bitmaps(){
    TobyTexBits = LoadDIBitmap("bmp/toby.bmp", &TobyTexInfo);
    glGenTextures(1, &TobytexName);
    glBindTexture(GL_TEXTURE_2D, TobytexName);
@@ -435,10 +406,26 @@ int main(int argc, char *argv[])
    glGenTextures(1, &StevetexName);
    glBindTexture(GL_TEXTURE_2D, StevetexName);
 
-
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
    glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+}
+
+/////////////////////////////////////////////////
+
+int main(int argc, char *argv[])
+{
+  camera = init_camera();
+  particle_systems = (LinkedListParticleSystem**) malloc(sizeof(LinkedListParticleSystem*) * MAX_NUMBER_OF_PARTICLE_SYSTEMS);
+  
+  int* xy = init_location(selected_index);
+  particle_systems[selected_index] = init_particle_system(xy[0],xy[1]);
+
+  srand(time(NULL));
+  initGraphics(argc, argv);
+  glEnable(GL_POINT_SMOOTH);
+
+  init_bitmaps();
 
   glutMainLoop();
   return 0;
