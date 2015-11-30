@@ -27,7 +27,9 @@ struct Particle {
 typedef enum {
 	POINTS = 0,
 	LINES,
-	FIRE
+	FIRE,
+	TOBY,
+	STEVE
 } RenderOption;
 
 typedef struct LinkedListParticleSystem{

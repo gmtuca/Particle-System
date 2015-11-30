@@ -22,7 +22,16 @@
 #include "particle.h"
 #include "camera.h"
 #include "fps.h"
-#include "textures.h"
+#include "ex11-bitmap.c"
+
+BITMAPINFO *TobyTexInfo; // Texture bitmap information
+GLubyte    *TobyTexBits; // Texture bitmap pixel bits
+int TobytexName;
+
+BITMAPINFO *SteveTexInfo; // Texture bitmap information
+GLubyte    *SteveTexBits; // Texture bitmap pixel bits
+int StevetexName;
+
 
 // Display list for coordinate axis 
 GLuint axisList;
@@ -111,6 +120,22 @@ void animate(){
   	
 	  	drawSpawnCircle(particle_system);
 
+  		if(particle_system->renderOption == TOBY){
+		   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, TobyTexInfo->bmiHeader.biWidth,
+		                TobyTexInfo->bmiHeader.biHeight, 0, GL_RGB,
+		                GL_UNSIGNED_BYTE, TobyTexBits);
+		   glEnable(GL_TEXTURE_2D);
+			}
+			else if(particle_systems[selected_index]->renderOption == STEVE){
+		   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, SteveTexInfo->bmiHeader.biWidth,
+		                SteveTexInfo->bmiHeader.biHeight, 0, GL_RGB,
+		                GL_UNSIGNED_BYTE, SteveTexBits);
+		   glEnable(GL_TEXTURE_2D); 					
+			}
+			else{
+				glDisable(GL_TEXTURE_2D);
+			}
+
 	  	if(particle_system->renderOption == POINTS){
 	  		glBegin(GL_POINTS);
 	  	}
@@ -128,60 +153,65 @@ void animate(){
 			  	continue;
 			 }
 
-			  p->t++;
-		      //p->t+=0.0002;
-		      //p->vy -= 0.1* p->t;
-		      p->vy -= GRAVITY;
+			p->t++;
+		    p->vy -= GRAVITY;
 		      
-		      if(p->y < 0 && p->vy < 0){
-		          p->vy *= -ELASTICITY;
-		          //drawCircle(p->x, p->z);
+		    if(p->y < 0 && p->vy < 0){
+		        p->vy *= -ELASTICITY;
+		    }
 
-		          //add_splash(splashes, init_splash(p->x, p->z, p->r, p->g, p->b));
-		        //p->t = 0.1;
-		      }
+		    glColor3f(p->r, p->g, p->b);
 
-		      glColor3f(p->r, p->g, p->b);
-
-		      if(particle_system->renderOption == LINES){
-			  	glBegin(GL_LINES);
+		    if(particle_system->renderOption == LINES){
+				glBegin(GL_LINES);
 			  	glVertex3f(p->x, p->y, p->z);
-			  }
-			  else if(particle_system->renderOption == FIRE){
-			  	glBegin(GL_LINES);
+			}
+			else if(particle_system->renderOption == FIRE){
+				glBegin(GL_LINES);
 			  	glVertex3f(particle_system->x,0, particle_system->z);
-			  }
+			}
+			else if(particle_system->renderOption == TOBY || particle_system->renderOption == STEVE){
+			   glBegin(GL_QUAD_STRIP);
+			}
 
-		      //p->y += p->vy * p->t + 0.5 * p->t * p->t;
-		      p->y += p->vy;
+		    p->y += p->vy;
 		      
-		      p->orbit += 360.0 / particle_system->particle_orbit_time;
+		    p->orbit += 360.0 / particle_system->particle_orbit_time;
 
-		      double a = 1.005 - 0.0000035 * p->t;
+		    double a = 1.005 - 0.0000035 * p->t;
 
-		      if(a<1){
-		      	a = 1;
-		      }
+		    if(a<1){
+		    	a = 1;
+		    }
 
-		      p->orbital_radius *= a;
+		    p->orbital_radius *= a;
 
-		      p->x = particle_system->x + cos(p->orbit * DEG_TO_RAD) * p->orbital_radius;
-		      p->z = particle_system->z + sin(p->orbit * DEG_TO_RAD) * p->orbital_radius;      
+		    p->x = particle_system->x + cos(p->orbit * DEG_TO_RAD) * p->orbital_radius;
+		    p->z = particle_system->z + sin(p->orbit * DEG_TO_RAD) * p->orbital_radius;      
 
-			    //render
-			    glVertex3f(p->x, p->y, p->z);
+		    if(particle_system->renderOption == TOBY || particle_system->renderOption == STEVE){
+			   glTexCoord2f(1.0, 1.0); glVertex3f(p->x-1, p->y+1, p->z);
+			   glTexCoord2f(1.0, 0.0); glVertex3f(p->x-1, p->y-1, p->z);
+			   glTexCoord2f(0.0, 1.0); glVertex3f(p->x+1, p->y+1, p->z);
+			   glTexCoord2f(0.0, 0.0); glVertex3f(p->x+1, p->y-1, p->z);
+	
+		    }
+		    else{
+		    	//render
+				glVertex3f(p->x, p->y, p->z);
+		    }
 
-		      	if(particle_system->renderOption == LINES || particle_system->renderOption == FIRE){
-		      		glEnd();
-		      	}
+		    if(particle_system->renderOption > POINTS){
+		    	glEnd();
+		    }
 
-				p = p->prev;
-			}
-
-			if(particle_system->renderOption == POINTS){
-				glEnd();
-			}
+			p = p->prev;
 		}
+
+		if(particle_system->renderOption == POINTS){
+			glEnd();
+		}
+	}
 
 	display_info();
 
@@ -312,7 +342,7 @@ void keyboard(unsigned char key, int x, int y)
   				break;
   	case 'f':	disco_floor = !disco_floor;
   				break;
-  	case 'r':	particle_systems[selected_index]->renderOption = (particle_systems[selected_index]->renderOption+1) % 3;
+  	case 'r':	particle_systems[selected_index]->renderOption = (particle_systems[selected_index]->renderOption+1) % 5;
   				break;
   	case 27:	exit(0); //esc
   				break;
@@ -395,6 +425,21 @@ int main(int argc, char *argv[])
   srand(time(NULL));
   initGraphics(argc, argv);
   glEnable(GL_POINT_SMOOTH);
+
+  //bitmap
+   TobyTexBits = LoadDIBitmap("bmp/toby.bmp", &TobyTexInfo);
+   glGenTextures(1, &TobytexName);
+   glBindTexture(GL_TEXTURE_2D, TobytexName);
+
+   SteveTexBits = LoadDIBitmap("bmp/steve.bmp", &SteveTexInfo);
+   glGenTextures(1, &StevetexName);
+   glBindTexture(GL_TEXTURE_2D, StevetexName);
+
+
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+   glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+
   glutMainLoop();
   return 0;
 }
