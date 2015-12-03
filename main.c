@@ -122,19 +122,19 @@ void animate(){
 
   		if(particle_system->renderOption == TOBY){
 		   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, TobyTexInfo->bmiHeader.biWidth,
-		                TobyTexInfo->bmiHeader.biHeight, 0, GL_RGB,
+		                TobyTexInfo->bmiHeader.biHeight, 0, GL_BGR,
 		                GL_UNSIGNED_BYTE, TobyTexBits);
 		   glEnable(GL_TEXTURE_2D);
-			}
-			else if(particle_systems[selected_index]->renderOption == STEVE){
+		}
+		else if(particle_system->renderOption == STEVE){
 		   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, SteveTexInfo->bmiHeader.biWidth,
-		                SteveTexInfo->bmiHeader.biHeight, 0, GL_RGB,
+		                SteveTexInfo->bmiHeader.biHeight, 0, GL_BGR,
 		                GL_UNSIGNED_BYTE, SteveTexBits);
 		   glEnable(GL_TEXTURE_2D); 					
-			}
-			else{
-				glDisable(GL_TEXTURE_2D);
-			}
+		}
+		else{
+			glDisable(GL_TEXTURE_2D);
+		}
 
 	  	if(particle_system->renderOption == POINTS){
 	  		glBegin(GL_POINTS);
