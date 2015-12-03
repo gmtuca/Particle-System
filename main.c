@@ -37,28 +37,26 @@
 #define MAX_NUMBER_OF_PARTICLE_SYSTEMS 5
 
 #define FLOOR_SIZE 30.0f
+#define AXIS_SIZE  200
 
 //////////////////////// GLOBALS //////////////////////////
 
+GLuint axisList;
+
 BITMAPINFO *TobyTexInfo; // Texture bitmap information
 GLubyte    *TobyTexBits; // Texture bitmap pixel bits
-int TobytexName;
+int 		TobytexName;
 
 BITMAPINFO *SteveTexInfo; // Texture bitmap information
 GLubyte    *SteveTexBits; // Texture bitmap pixel bits
-int StevetexName;
+int 		StevetexName;
 
-GLuint axisList;
-
-int AXIS_SIZE= 200;
-int axisEnabled= 1;
 
 LinkedListParticleSystem** particle_systems;
-
-int selected_index = 0;
-
 Camera* camera;
+
 int disco_floor = 0;
+int selected_index = 0;
 
 ///////////////////////////////////////////////////////////
 
@@ -91,15 +89,7 @@ void drawFloor(double r, double g, double b){
 	glPopMatrix();
 }
 
-void animate(){ 
-
-	count_fps();
-
-	view(camera);
-
-	// Clear the screen
-	glClear(GL_COLOR_BUFFER_BIT);
-
+void drawDiscoFloor(){
 	if(disco_floor && particle_systems[selected_index]){
 		rgb curr_rgb = hsv2rgb(*particle_systems[selected_index]->current_hsv);
 		drawFloor(curr_rgb.r, curr_rgb.g, curr_rgb.b);
@@ -107,7 +97,39 @@ void animate(){
 	else{
 		drawFloor(0.5, 0.5, 0.5);
 	}
-	
+}
+
+void maybeEnableTexture(LinkedListParticleSystem* ps){
+  	if(ps->renderOption == TOBY){
+	   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, TobyTexInfo->bmiHeader.biWidth,
+	                TobyTexInfo->bmiHeader.biHeight, 0, GL_BGR,
+	                GL_UNSIGNED_BYTE, TobyTexBits);
+	   glEnable(GL_TEXTURE_2D);
+	}
+	else if(ps->renderOption == STEVE){
+	   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, SteveTexInfo->bmiHeader.biWidth,
+	                SteveTexInfo->bmiHeader.biHeight, 0, GL_BGR,
+	                GL_UNSIGNED_BYTE, SteveTexBits);
+	   glEnable(GL_TEXTURE_2D); 					
+	}
+}
+
+void maybeDisableTexture(LinkedListParticleSystem* ps){
+	if(ps->renderOption >= TOBY){
+		glDisable(GL_TEXTURE_2D);
+	}
+}
+
+void animate(){
+	count_fps();
+	view(camera);
+
+	// Clear the screen
+	glClear(GL_COLOR_BUFFER_BIT);
+
+	drawDiscoFloor();
+   	glCallList(axisList);
+ 	
 	int i;
 	for(i = 0; i < MAX_NUMBER_OF_PARTICLE_SYSTEMS; i++){
 		LinkedListParticleSystem* particle_system = particle_systems[i];
@@ -120,21 +142,7 @@ void animate(){
   	
 	  	drawSpawnCircle(particle_system);
 
-  		if(particle_system->renderOption == TOBY){
-		   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, TobyTexInfo->bmiHeader.biWidth,
-		                TobyTexInfo->bmiHeader.biHeight, 0, GL_BGR,
-		                GL_UNSIGNED_BYTE, TobyTexBits);
-		   glEnable(GL_TEXTURE_2D);
-		}
-		else if(particle_system->renderOption == STEVE){
-		   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, SteveTexInfo->bmiHeader.biWidth,
-		                SteveTexInfo->bmiHeader.biHeight, 0, GL_BGR,
-		                GL_UNSIGNED_BYTE, SteveTexBits);
-		   glEnable(GL_TEXTURE_2D); 					
-		}
-		else{
-			glDisable(GL_TEXTURE_2D);
-		}
+	  	maybeEnableTexture(particle_system);
 
 	  	if(particle_system->renderOption == POINTS){
 	  		glBegin(GL_POINTS);
@@ -142,6 +150,7 @@ void animate(){
 
 		Particle* p = particle_system->tail;
 
+		//Loop through all particles of this system
 		while(p){
 			//Remove the particle if it is dead
 			if(p->t > particle_system->particle_lifespan){
@@ -153,6 +162,7 @@ void animate(){
 			  	continue;
 			 }
 
+			//Update properties of the particle
 			p->t++;
 		    p->vy -= GRAVITY;
 		      
@@ -210,13 +220,14 @@ void animate(){
 		if(particle_system->renderOption == POINTS){
 			glEnd();
 		}
+
+		glPopMatrix();
+
+		maybeDisableTexture(particle_system);
+		
 	}
 
 	display_info();
-
-    if(axisEnabled){
-    	glCallList(axisList);
-    }
 
   glutSwapBuffers();
 }
@@ -224,6 +235,10 @@ void animate(){
 ///////////////////////////////////////////////
 
 void special_keypress(int key, int x, int y) {
+	if(!particle_systems[selected_index]){
+		return;
+	}
+
 	Particle* p = particle_systems[selected_index]->tail;
 
 	switch (key) {
@@ -327,6 +342,10 @@ void keyboard(unsigned char key, int x, int y)
 	  int* xy = init_location(selected_index);
 	  particle_systems[selected_index] = init_particle_system(xy[0], xy[1]);
   	}
+  	return;
+  }
+
+  if(!particle_systems[selected_index]){
   	return;
   }
 
