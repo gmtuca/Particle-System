@@ -1,9 +1,10 @@
-#define DEFAULT_PARTICLE_LIFESPAN         		1700
-#define DEFAULT_PARTICLE_SPAWN_FREQUENCY  		0.1
-#define DEFAULT_PARTICLE_ORBIT_TIME       		200
-#define DEFAULT_PARTICLE_ORBIT_RADIUS     		0.2
+#define DEFAULT_PARTICLE_LIFESPAN         		  1700
+#define DEFAULT_PARTICLE_SPAWN_FREQUENCY  		  0.1
+#define DEFAULT_PARTICLE_ORBIT_TIME       		  200
+#define DEFAULT_PARTICLE_ORBIT_RADIUS     		  0.2
 #define DEFAULT_PARTICLE_HSV_INCREMENT_AMOUNT 	0.25
-#define DEFAULT_PARTICLE_INITIAL_VY				0.25
+#define DEFAULT_PARTICLE_INITIAL_VY				      0.25
+#define DEFAULT_PARTICLE_GRAVITY                0.005
 
 #define PI 3.1415
 
@@ -44,6 +45,7 @@ typedef struct LinkedListParticleSystem{
 	GLfloat initial_vy;
 	GLfloat initial_orbit_radius;
 	GLfloat particle_orbit_time;
+  GLfloat gravity;
 
 	int particle_lifespan;
 	RenderOption renderOption;
@@ -60,18 +62,20 @@ void reset_attributes(LinkedListParticleSystem* ps, GLfloat x, GLfloat z){
   ps->z = z;
   ps->head = NULL;
   ps->tail = NULL;
-  ps->particle_lifespan         = DEFAULT_PARTICLE_LIFESPAN;
-  ps->particle_spawn_frequency  = DEFAULT_PARTICLE_SPAWN_FREQUENCY;
+  ps->particle_lifespan           = DEFAULT_PARTICLE_LIFESPAN;
+  ps->particle_spawn_frequency    = DEFAULT_PARTICLE_SPAWN_FREQUENCY;
 
-  ps->hsv_increment_amount 		= DEFAULT_PARTICLE_HSV_INCREMENT_AMOUNT;
+  ps->hsv_increment_amount 		    = DEFAULT_PARTICLE_HSV_INCREMENT_AMOUNT;
   
   ps->current_hsv->h = 0;
   ps->current_hsv->s = 1;
   ps->current_hsv->v = 1;
 
-  ps->initial_vy = DEFAULT_PARTICLE_INITIAL_VY;
-  ps->initial_orbit_radius = DEFAULT_PARTICLE_ORBIT_RADIUS;
-  ps->particle_orbit_time = DEFAULT_PARTICLE_ORBIT_TIME;
+  ps->initial_vy                  = DEFAULT_PARTICLE_INITIAL_VY;
+  ps->initial_orbit_radius        = DEFAULT_PARTICLE_ORBIT_RADIUS;
+  ps->particle_orbit_time         = DEFAULT_PARTICLE_ORBIT_TIME;
+
+  ps->gravity                     = DEFAULT_PARTICLE_GRAVITY;
 
   ps->renderOption = POINTS;
 }

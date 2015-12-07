@@ -5,10 +5,6 @@
 // This code is licensed under the terms of the Creative Commons 
 // Attribution 2.0 Generic (CC BY 3.0) License.
 //
-// Skeleton code for COMP37111 coursework, 2013-14
-//
-// Authors: Arturs Bekasovs and Toby Howard
-//
 /////////////////////////////////////////////////////////////////
 
 ///////////////////////////////////////////////////////////
@@ -26,8 +22,8 @@
 
 #define DEG_TO_RAD 0.017453293
 
-#define GRAVITY 0.005
 #define ELASTICITY 0.9
+
 
 #define POINT_SIZE 10.0f
 
@@ -50,7 +46,6 @@ int 		TobytexName;
 BITMAPINFO *SteveTexInfo; // Texture bitmap information
 GLubyte    *SteveTexBits; // Texture bitmap pixel bits
 int 		StevetexName;
-
 
 LinkedListParticleSystem** particle_systems;
 Camera* camera;
@@ -132,61 +127,62 @@ void animate(){
  	
 	int i;
 	for(i = 0; i < MAX_NUMBER_OF_PARTICLE_SYSTEMS; i++){
-		LinkedListParticleSystem* particle_system = particle_systems[i];
-		if(!particle_system){
+		LinkedListParticleSystem* ps = particle_systems[i];
+		if(!ps){
 			continue;
 		}
 
-		update_particle_system(particle_system);
-		create_particles(particle_system);
+		update_particle_system(ps);
+		create_particles(ps);
   	
-	  	drawSpawnCircle(particle_system);
+	  	drawSpawnCircle(ps);
 
-	  	maybeEnableTexture(particle_system);
+	  	maybeEnableTexture(ps);
 
-	  	if(particle_system->renderOption == POINTS){
+	  	if(ps->renderOption == POINTS){
 	  		glBegin(GL_POINTS);
 	  	}
 
-		Particle* p = particle_system->tail;
+		Particle* p = ps->tail;
 
 		//Loop through all particles of this system
 		while(p){
 			//Remove the particle if it is dead
-			if(p->t > particle_system->particle_lifespan){
-			  	particle_system->tail = p->prev;
-			  	particle_system->n--;
+			if(p->t > ps->particle_lifespan){
+			  	ps->tail = p->prev;
+			  	ps->n--;
 			  	free(p);
 
-			  	p = particle_system->tail;
+			  	p = ps->tail;
 			  	continue;
 			 }
 
 			//Update properties of the particle
 			p->t++;
-		    p->vy -= GRAVITY;
-		      
+
+		    p->vy -= ps->gravity;
+		        
 		    if(p->y < 0 && p->vy < 0){
 		        p->vy *= -ELASTICITY;
 		    }
 
 		    glColor3f(p->r, p->g, p->b);
 
-		    if(particle_system->renderOption == LINES){
+		    if(ps->renderOption == LINES){
 				glBegin(GL_LINES);
 			  	glVertex3f(p->x, p->y, p->z);
 			}
-			else if(particle_system->renderOption == FIRE){
+			else if(ps->renderOption == FIRE){
 				glBegin(GL_LINES);
-			  	glVertex3f(particle_system->x,0, particle_system->z);
+			  	glVertex3f(ps->x,0, ps->z);
 			}
-			else if(particle_system->renderOption == TOBY || particle_system->renderOption == STEVE){
+			else if(ps->renderOption == TOBY || ps->renderOption == STEVE){
 			   glBegin(GL_QUAD_STRIP);
 			}
 
 		    p->y += p->vy;
 		      
-		    p->orbit += 360.0 / particle_system->particle_orbit_time;
+		    p->orbit += 360.0 / ps->particle_orbit_time;
 
 		    double a = 1.005 - 0.0000035 * p->t;
 
@@ -196,10 +192,10 @@ void animate(){
 
 		    p->orbital_radius *= a;
 
-		    p->x = particle_system->x + cos(p->orbit * DEG_TO_RAD) * p->orbital_radius;
-		    p->z = particle_system->z + sin(p->orbit * DEG_TO_RAD) * p->orbital_radius;      
+		    p->x = ps->x + cos(p->orbit * DEG_TO_RAD) * p->orbital_radius;
+		    p->z = ps->z + sin(p->orbit * DEG_TO_RAD) * p->orbital_radius;      
 
-		    if(particle_system->renderOption == TOBY || particle_system->renderOption == STEVE){
+		    if(ps->renderOption == TOBY || ps->renderOption == STEVE){
 			   glTexCoord2f(1.0, 1.0); glVertex3f(p->x-1, p->y+1, p->z);
 			   glTexCoord2f(1.0, 0.0); glVertex3f(p->x-1, p->y-1, p->z);
 			   glTexCoord2f(0.0, 1.0); glVertex3f(p->x+1, p->y+1, p->z);
@@ -210,20 +206,20 @@ void animate(){
 				glVertex3f(p->x, p->y, p->z);
 		    }
 
-		    if(particle_system->renderOption > POINTS){
+		    if(ps->renderOption > POINTS){
 		    	glEnd();
 		    }
 
 			p = p->prev;
 		}
 
-		if(particle_system->renderOption == POINTS){
+		if(ps->renderOption == POINTS){
 			glEnd();
 		}
 
 		glPopMatrix();
 
-		maybeDisableTexture(particle_system);
+		maybeDisableTexture(ps);
 		
 	}
 
@@ -236,7 +232,7 @@ void animate(){
 
 void special_keypress(int key, int x, int y) {
 	if(!particle_systems[selected_index]){
-		return;
+		return;	
 	}
 
 	Particle* p = particle_systems[selected_index]->tail;
@@ -288,7 +284,9 @@ int* init_location(int ps_index){
 		case 4: xy[0]=0;
 				xy[1]=FLOOR_SIZE/2;
 				break;
-		default:break;
+		default:xy[0]=0;
+				xy[1]=0;
+				break;
 	}
 
 	return xy;
@@ -297,7 +295,7 @@ int* init_location(int ps_index){
 void keyboard(unsigned char key, int x, int y)
 {
 
-  if(key >= '0' && key <= '9'){
+  if(key >= '1' && key <= '9'){
   	int num_clicked = key - '0';
 
   	if(num_clicked > MAX_NUMBER_OF_PARTICLE_SYSTEMS){
@@ -354,6 +352,14 @@ void keyboard(unsigned char key, int x, int y)
   				break;
   	case '-':	particle_systems[selected_index]->particle_spawn_frequency /= 1.2;
   				break;
+  	case 't':	if(particle_systems[selected_index]->gravity > 0.0003){
+  					particle_systems[selected_index]->gravity /= 1.05;
+  				}
+  				return;
+  	case 'g':	if(particle_systems[selected_index]->gravity < 0.03){
+  					particle_systems[selected_index]->gravity *= 1.05;
+  				}
+  				return;
   	case 'c':	particle_systems[selected_index]->hsv_increment_amount *= 1.2;
   				break;
   	case 'f':	disco_floor = !disco_floor;

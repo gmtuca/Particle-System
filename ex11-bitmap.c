@@ -1,4 +1,9 @@
 /*
+    Code to load and setup bitmap textures
+    Taken from the second year's lab.
+    I aknowledge this has not been written by me.
+*/
+/*
  * Windows BMP file functions for OpenGL.
  *
  * Written by Michael Sweet:  OpenGL SuperBible
