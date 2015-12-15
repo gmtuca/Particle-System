@@ -6,5 +6,5 @@
 <p> The following is a benchmark plot of <b> number of particles </b> against <b> frames per second </b> on an ASUS X555 machine (Intel i5-5200 quadcore, 8GB RAM):</p>
 
 
-<img src='https://raw.github.com/gmtuca/Particle-System/master/resources/asusX555.png' width='50%' height='50%'> <br />
+<img src='https://raw.github.com/gmtuca/Particle-System/master/resources/asusX555.png'> <br />
 
