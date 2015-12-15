@@ -160,6 +160,9 @@ void add_particle(LinkedListParticleSystem* ps, Particle* p){
       ps->tail = p;
     }
 
+    p->x = ps->x;
+    p->z = ps->z;
+
     rgb p_rgb = hsv2rgb(*ps->current_hsv);
 
     p->r = p_rgb.r;

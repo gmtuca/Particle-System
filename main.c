@@ -362,8 +362,6 @@ void keyboard(unsigned char key, int x, int y)
   				return;
   	case 'c':	particle_systems[selected_index]->hsv_increment_amount *= 1.2;
   				break;
-  	case 'f':	disco_floor = !disco_floor;
-  				break;
   	case 'r':	particle_systems[selected_index]->renderOption = (particle_systems[selected_index]->renderOption+1) % 5;
   				break;
   	case 127:	killall(particle_systems[selected_index]);//del
